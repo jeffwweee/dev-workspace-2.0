@@ -91,14 +91,27 @@ $PROJECT_ROOT/scripts/reply.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID "Contextual AC
 | "status" | "Checking status..." |
 | "hello" | "Hi! How can I help?" |
 
-### Step 3: Process the request
-Handle the request based on intent:
-- **brainstorm/design** → discuss interactively
-- **implement/build** → spawn subagent via Task tool
-- **status** → read from memory files
-- **question** → answer directly
+### Step 3: Detect Intent (using-skill)
 
-### Step 4: Send final response (using Bash tool)
+**Use the `using-skill` skill to determine task type:**
+
+| Intent | Action |
+|--------|--------|
+| **brainstorm/design** | Use `brainstorming` skill |
+| **implement/build** | Use `subagent-driven-development` skill |
+| **status/question** | Answer directly |
+
+### Step 4: Execute
+
+**For implementation tasks:**
+- Use `subagent-driven-development` skill to dispatch fresh subagents
+- Follow its two-stage review process (spec compliance + code quality)
+
+**For design/brainstorm tasks:**
+- Use `brainstorming` skill for requirements exploration
+- Use `writing-plans` skill after design is approved
+
+### Step 5: Send final response (using Bash tool)
 ```bash
 $PROJECT_ROOT/scripts/reply.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID "Your full response..." "EXTRACTED_MSG_ID"
 ```
@@ -120,7 +133,17 @@ If message starts with `/`, handle as command:
 2. **REPLY VIA HELPER SCRIPT** - Use `./scripts/reply.sh` to send messages (include msg_id for threading)
 3. **NO TERMINAL OUTPUT** - User cannot see terminal output from Telegram
 4. **SEND ACK FIRST** - Always acknowledge before processing
-5. **FRESH SUBAGENTS** - Never reuse subagents for multiple tasks
+5. **USE WORKFLOW SKILLS** - Use `using-skill` to detect intent, `subagent-driven-development` for implementation
+
+## Workflow Skills
+
+| Skill | When to Use |
+|------|-------------|
+| `using-skill` | Detect intent before processing |
+| `brainstorming` | Creative work - features, components, functionality |
+| `writing-plans` | After design approved - create implementation plan |
+| `subagent-driven-development` | Execute implementation plans with fresh subagents + reviews |
+| `verification-before-completion` | Before claiming work is complete |
 
 ## Memory Files
 
@@ -135,18 +158,14 @@ Update at session end:
 
 ## Subagent Pattern
 
-When spawning subagent for implementation tasks:
+When spawning subagent for implementation tasks, use `subagent-driven-development` skill which handles:
 
-### Foreground (blocks until done)
-```
-Task tool:
-  description: "Implement <feature>"
-  prompt: |
-    ## Task
-    <Full task description>
-```
+1. Fresh subagent per task
+2. Two-stage review (spec compliance + code quality)
+3. Progress tracking via TodoWrite
 
-### Background (returns immediately, continues in parallel)
+### Background Tasks
+
 ```
 Task tool:
   description: "Long running task"

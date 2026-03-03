@@ -84,9 +84,11 @@ digraph process {
 
 ## Prompt Templates
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+All prompt templates are in the `./reference/` folder:
+
+- `./reference/implementer-prompt.md` - Dispatch implementer subagent
+- `./reference/spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
+- `./reference/code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
 
 ## Example Workflow
 
