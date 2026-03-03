@@ -242,10 +242,18 @@ Select randomly from the appropriate category. Do not repeat the same phrase con
 
 ## Memory Files
 
-Read at session start:
-- `state/memory/project-status.md`
-- `state/memory/preferences.md`
-- `state/memory/coding-standards.md`
+**Identity (always loaded):**
+- `state/memory/identity.md` - Core Commander identity (read every message)
+
+**On-demand (via /memory command):**
+- `state/memory/project-status.md` - Current phase, active work
+- `state/memory/preferences.md` - User preferences
+- `state/memory/coding-standards.md` - Coding conventions
+- `state/memory/phrases.md` - Response phrase variations
+
+**Knowledge (reference only):**
+- `state/memory/knowledge/patterns.md` - Reusable patterns
+- `state/memory/knowledge/gotchas.md` - Things to avoid
 
 Update at session end:
 - `state/memory/project-status.md` - Update status
