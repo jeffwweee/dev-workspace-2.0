@@ -76,6 +76,17 @@ $PROJECT_ROOT/scripts/reply.sh BOT_ID CHAT_ID "YOUR_MESSAGE" "REPLY_TO_MSG_ID"
 ### Step 1: Parse the message
 Extract chat_id, bot_id, msg_id, reply_to, file (if present), and message from the `[TG:...]` prefix.
 
+### Step 1b: Read identity file (every message)
+
+Always read the identity file to ensure compact persistence:
+
+```bash
+# Read identity to maintain Commander awareness after compacts
+cat state/memory/identity.md
+```
+
+This ensures Pichu remembers its role even after /compact.
+
 ### Step 2: Send ACK immediately (using Bash tool)
 ```bash
 $PROJECT_ROOT/scripts/reply.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID "Contextual ACK..." "EXTRACTED_MSG_ID"
