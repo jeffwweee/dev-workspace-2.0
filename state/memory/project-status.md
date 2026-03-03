@@ -1,10 +1,11 @@
 # Project Status
 
 ## Current Phase
-Production Ready
+Production Ready + Scaling Up
 
 ## Active Work
-None
+- Branch: `feature/scaling-up`
+- Superpowers workflow integration (skills copied, pending Commander update)
 
 ## Recent Decisions
 - 2026-03-03: Project started
@@ -14,11 +15,15 @@ None
 - 2026-03-03: Memory persistence test passed (session restart)
 - 2026-03-03: Subagent spawning tested - slash commands & markdownv2 implemented
 - 2026-03-03: 3 new features: file upload, file attachment, reply threading
-- 2026-03-03: GitHub repo created: github.com/jeffwweee/pichu-telegram-agent
+- 2026-03-03: GitHub repo created: github.com/jeffwweee/dev-workspace-2.0
 - 2026-03-03: Documentation complete: README, quickstart, userguide
+- 2026-03-03: Redis removed - simplified stack
+- 2026-03-03: Tunnel docs added (Cloudflare + ngrok)
+- 2026-03-03: Superpowers workflow skills integrated (brainstorming, writing-plans, subagent-driven-development, verification-before-completion)
 
 ## Blockers
 None
 
 ## Next Up
-- Production deployment
+- Test workflow skills in real task
+- Merge feature/scaling-up to main
