@@ -84,14 +84,25 @@ app.post('/webhook/:botId', async (req, res) => {
   try {
     const filePart = filePath ? `[FILE:${filePath}]` : '';
     const prefixed = `[TG:${chatId}:${botId}:${messageId}:${replyTo}]${filePart} ${text.replace(/\n/g, ' ')}`;
-    execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, prefixed]);
-    setTimeout(() => {
-      try {
-        execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, 'Enter']);
-      } catch (err) {
-        console.error('tmux Enter failed:', err);
-      }
-    }, TMUX_DELAY_MS);
+
+    // /stop command: send Escape to interrupt immediately, then send command without delay
+    if (text.trim() === '/stop') {
+      // Send Escape to cancel any pending input/interrupt
+      execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, 'Escape']);
+      // Send the message immediately (no delay)
+      execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, prefixed]);
+      execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, 'Enter']);
+    } else {
+      // Normal message: queue with delay
+      execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, prefixed]);
+      setTimeout(() => {
+        try {
+          execFileSync('tmux', ['send-keys', '-t', TMUX_SESSION, 'Enter']);
+        } catch (err) {
+          console.error('tmux Enter failed:', err);
+        }
+      }, TMUX_DELAY_MS);
+    }
   } catch (err) {
     console.error('tmux injection failed:', err);
   }
