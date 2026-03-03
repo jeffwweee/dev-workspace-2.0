@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compact counter
+.compact-counter.json
+
+# Session state (user data)
+state/sessions/*.md
+!state/sessions/TEMPLATE.md
+
+# Uploaded files (user data)
+state/files/*
+!state/files/.gitkeep
+gateway/state/files/*
+!gateway/state/files/.gitkeep

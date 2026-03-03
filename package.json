@@ -1,0 +1,17 @@
+{
+  "name": "dev-workspace-v2",
+  "version": "1.0.0",
+  "description": "Multi-agent Telegram system v2",
+  "private": true,
+  "workspaces": [
+    "gateway"
+  ],
+  "scripts": {
+    "gateway": "npm run dev -w gateway",
+    "dev": "npm run gateway",
+    "test": "npm test -ws"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
