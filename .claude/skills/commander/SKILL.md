@@ -71,6 +71,33 @@ $PROJECT_ROOT/scripts/reply.sh BOT_ID CHAT_ID "YOUR_MESSAGE" "REPLY_TO_MSG_ID"
 
 **The helper script handles JSON escaping automatically.** You can include special characters, newlines, quotes, etc. in your message.
 
+### Send File Attachments
+
+To send a file as a document attachment (e.g., markdown files, images):
+
+```bash
+$PROJECT_ROOT/scripts/send-file.sh BOT_ID CHAT_ID /path/to/file.md "Caption text" "REPLY_TO_MSG_ID"
+```
+
+**Parameters:**
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| BOT_ID | Bot identifier (e.g., pichu) | Yes |
+| CHAT_ID | Telegram chat ID | Yes |
+| file_path | Absolute path to file | Yes |
+| Caption | File caption (in quotes) | Optional |
+| REPLY_TO_MSG_ID | Message ID to reply to | Optional |
+
+**Example:**
+```bash
+~/dev-workspace-v2/scripts/send-file.sh pichu 123456789 /home/user/docs/report.md "Analysis Report" "42"
+```
+
+**Use send-file.sh when:**
+- Sending markdown files, code files, or documents
+- User asks for files to be sent as attachments
+- Content is too long for a regular message
+
 ## Message Flow
 
 ### Step 1: Parse the message
@@ -121,8 +148,9 @@ $PROJECT_ROOT/scripts/typing.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID
 ### Step 4: Execute
 
 **For implementation tasks:**
-- Use `subagent-driven-development` skill to dispatch fresh subagents
-- Follow its two-stage review process (spec compliance + code quality)
+- Use `background-tasks` skill to spawn implementation in background
+- This wraps `subagent-driven-development` with `run_in_background: true`
+- Pichu stays responsive to new messages while task runs
 
 **For design/brainstorm tasks:**
 - Use `brainstorming` skill for requirements exploration
@@ -215,7 +243,7 @@ Then acknowledge: "Memory loaded."
 2. **REPLY VIA HELPER SCRIPT** - Use `./scripts/reply.sh` to send messages (include msg_id for threading)
 3. **NO TERMINAL OUTPUT** - User cannot see terminal output from Telegram
 4. **SEND ACK FIRST** - Always acknowledge before processing
-5. **USE WORKFLOW SKILLS** - Use `using-skill` to detect intent, `subagent-driven-development` for implementation
+5. **USE WORKFLOW SKILLS** - Use `using-skill` to detect intent, `background-tasks` for implementation
 
 ## Phrase Selection
 
@@ -261,7 +289,13 @@ Update at session end:
 
 ## Subagent Pattern
 
-When spawning subagent for implementation tasks, use `subagent-driven-development` skill which handles:
+When spawning subagent for implementation tasks, use `background-tasks` skill which:
+
+1. Wraps `subagent-driven-development` with `run_in_background: true`
+2. Keeps Pichu responsive to new messages
+3. Handles smart notification when complete
+
+The background subagent then uses `subagent-driven-development` internally which handles:
 
 1. Fresh subagent per task
 2. Two-stage review (spec compliance + code quality)
