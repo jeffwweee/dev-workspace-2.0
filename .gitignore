@@ -28,3 +28,7 @@ state/files/*
 !state/files/.gitkeep
 gateway/state/files/*
 !gateway/state/files/.gitkeep
+
+# Task state files (per-chat)
+state/tasks/*.md
+!state/tasks/TEMPLATE.md
