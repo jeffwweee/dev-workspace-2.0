@@ -86,7 +86,7 @@ digraph brainstorming {
 - After writing the design document, send it to user for approval via Telegram
 
 ```bash
-~/dev-workspace-v2/scripts/send-file.sh pichu $CHAT_ID docs/plans/YYYY-MM-DD-<topic>-design.md "Design doc for <topic> - please review and approve" $MSG_ID
+./scripts/send-file.sh pichu $CHAT_ID docs/plans/YYYY-MM-DD-<topic>-design.md "Design doc for <topic> - please review and approve" $MSG_ID
 ```
 
 - Wait for user response:

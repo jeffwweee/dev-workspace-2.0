@@ -5,7 +5,8 @@ Production Ready + Scaling Up
 
 ## Active Work
 - Branch: `feature/scaling-up`
-- Superpowers workflow integration (skills copied, pending Commander update)
+- PR #2 ready for merge
+- Agenthub integration for agent-to-agent messaging
 
 ## Recent Decisions
 - 2026-03-03: Project started
@@ -20,6 +21,8 @@ Production Ready + Scaling Up
 - 2026-03-03: Redis removed - simplified stack
 - 2026-03-03: Tunnel docs added (Cloudflare + ngrok)
 - 2026-03-03: Superpowers workflow skills integrated (brainstorming, writing-plans, subagent-driven-development, verification-before-completion)
+- 2026-03-03: Repo renamed to devspace
+- 2026-03-03: Agenthub integration - connected with Jerclaw
 
 ## Blockers
 None
