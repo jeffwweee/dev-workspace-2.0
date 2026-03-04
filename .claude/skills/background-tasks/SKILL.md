@@ -16,9 +16,11 @@ User can also trigger manually: "execute the plan"
 ## Process
 
 1. Load plan → Generate task ID → Reply "Started background execution..."
+   - Log: `./scripts/log-session.sh {chat_id} task_started {task_id} "{description}"`
 2. Spawn subagent with `Task(tool)` - see `references/task-template.md`
 3. Return to message loop (task runs in background)
 4. Handle completion with smart notification
+   - Log: `./scripts/log-session.sh {chat_id} task_completed {task_id} "{summary}"`
 
 ## Critical Rules
 
@@ -27,6 +29,22 @@ User can also trigger manually: "execute the plan"
 3. **Reply immediately after spawn**
 4. **Don't block - return to Commander**
 5. **Smart notification - only if user idle > 60s**
+
+## After Complete Hook
+
+After subagent completes, capture the observation:
+
+```bash
+# After TaskOutput is received
+TASK_ID="<task_id>" \
+TASK_TYPE="<implement|fix|review>" \
+TASK_PROMPT="<original_prompt>" \
+TASK_RESULT="<result_summary>" \
+FILES_CHANGED="<file1 file2>" \
+./scripts/hooks/after-complete.sh
+```
+
+The hook appends to `state/learning/observations.jsonl` for later processing by `/evolve`.
 
 ## Integration
 

@@ -40,11 +40,18 @@ If no `[TG:` prefix, respond normally in terminal.
 ## Message Flow
 
 1. **Parse message** - Extract TG_* values
-2. **Read identity** - `cat state/memory/identity.md` (maintains awareness after compacts)
-3. **ACK immediately** - Send contextual ack via reply.sh
-4. **Detect intent** - Use `using-skill` to determine task type
-5. **Execute** - Use appropriate workflow skill
-6. **Send final response** - Via reply.sh
+2. **Track active chat** - Update `state/sessions/.active-chat.json`
+3. **Read identity** - `cat state/memory/identity.md` (maintains awareness after compacts)
+4. **ACK immediately** - Send contextual ack via reply.sh
+5. **Detect intent** - Use `using-skill` to determine task type
+6. **Execute** - Use appropriate workflow skill
+7. **Send final response** - Via reply.sh
+
+**Chat Tracking Implementation:**
+```bash
+# After parsing TG_* values, update active chat:
+echo "{\"chat_id\": \"$TG_CHAT_ID\", \"bot_id\": \"$TG_BOT_ID\", \"last_updated\": \"$(date -I)\"}" > state/sessions/.active-chat.json
+```
 
 ## Task State Management
 
@@ -75,6 +82,10 @@ Scripts in `scripts/task-state.sh` handle state. API:
 | /compact | Trigger strategic compact |
 | /save | Force memory update |
 | /tasks | List recent task files |
+| /evolve | Extract patterns from observations, route to memory/candidates |
+| /evolve-status | Show pending observations count |
+| /candidates | List pending candidate files for review |
+| /end-session | Generate session summary, archive, and conditionally run /evolve |
 
 ## Workflow Skills
 
@@ -99,6 +110,47 @@ Scripts in `scripts/task-state.sh` handle state. API:
 
 **Reference:** `state/memory/knowledge/patterns.md`, `state/memory/knowledge/gotchas.md`
 
+## Learning Commands
+
+### /evolve
+
+Process observations and extract patterns:
+
+1. Run `node scripts/evolve.js`
+2. Report results: "Extracted X patterns, Y gotchas, Z candidates"
+3. Use reply.sh to send to user
+
+### /evolve-status
+
+Check pending observations:
+
+1. Run `./scripts/evolve-status.sh`
+2. Send output via reply.sh
+
+### /candidates
+
+List candidate files:
+
+1. Run `./scripts/candidates-list.sh`
+2. Send output via reply.sh
+3. Optionally use send-file.sh to send specific candidate for review
+
+## Session End Command
+
+### /end-session
+
+Complete the session with summary and archive:
+
+1. Run `./scripts/end-session.sh {chat_id}`
+2. Parse output - extract summary and OBS_COUNT
+3. Send summary via reply.sh
+4. Send archive file via send-file.sh
+5. Check observation count:
+   - If > 5: Run `node scripts/evolve.js` and report results
+   - If <= 5: Send "Observations < 5, skipping /evolve"
+6. Clear session log file: `truncate -s 0 state/sessions/{chat_id}-log.jsonl`
+7. Queue restart: `./scripts/trigger-restart.sh` (schedules /clear + /commander)
+
 ## Subagent Pattern
 
 For implementation tasks, use `background-tasks` skill which:
@@ -106,14 +158,21 @@ For implementation tasks, use `background-tasks` skill which:
 - Keeps Pichu responsive to new messages
 - Handles smart notification when complete
 
-**Check status:** `TaskOutput(task_id="...", block=false)`
-**Wait for completion:** `TaskOutput(task_id="...", block=true, timeout=60000)`
+**NON-BLOCKING status check:** `TaskOutput(task_id="...", block=false)`
+**DO NOT wait for completion** - let task run in background, return to message loop immediately
+
+**When to check status:**
+- User types `/status` command
+- Smart notification check (user idle > 60s + pending notification)
+
+**CRITICAL:** Never use `block=true` after spawning background task - this blocks Pichu from processing new messages!
 
 ## Critical Rules
 
 1. **NEVER IMPLEMENT YOURSELF** - Always plan and delegate to subagents
-2. PARSE FIRST - Extract TG_* values before responding
-3. REPLY VIA SCRIPT - Use `scripts/reply.sh` for ALL responses
-4. NO TERMINAL OUTPUT - User cannot see terminal from Telegram
-5. SEND ACK FIRST - Always acknowledge before processing
-6. USE WORKFLOW SKILLS - Use `using-skill` to detect intent
+2. **NEVER BLOCK ON BACKGROUND TASKS** - Always return to message loop after spawning
+3. PARSE FIRST - Extract TG_* values before responding
+4. REPLY VIA SCRIPT - Use `scripts/reply.sh` for ALL responses
+5. NO TERMINAL OUTPUT - User cannot see terminal from Telegram
+6. SEND ACK FIRST - Always acknowledge before processing
+7. USE WORKFLOW SKILLS - Use `using-skill` to detect intent

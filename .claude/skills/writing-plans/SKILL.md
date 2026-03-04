@@ -9,6 +9,10 @@ Write implementation plans for subagents to execute. Include context: files, pat
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>-plan.md`
 
+## Telegram Mode
+
+See `references/telegram-handling.md` for message parsing and ACK flow.
+
 ## Plan Review
 
 Before saving, verify:
@@ -23,6 +27,26 @@ See `.claude/skills/writing-plans/references/plan-template.md` for template.
 
 See `.claude/skills/writing-plans/references/handoff-template.md` for handoff scripts.
 
+## After Plan Saved
+
+After saving the implementation plan, check if it's large and recommend compact:
+
+```bash
+# Check if plan doc is large
+PLAN_FILE="docs/plans/YYYY-MM-DD-<feature>-plan.md"  # Use actual filename
+if [ "$(./scripts/check-doc-size.sh "$PLAN_FILE")" = "recommend" ]; then
+  SIZE_KB=$(du -k "$PLAN_FILE" | cut -f1)
+  reply "Plan saved. Doc is large (${SIZE_KB}KB). Consider /compact to free context before execution."
+else
+  reply "Plan saved. Ready for execution."
+fi
+
+# Log plan save for session tracking
+./scripts/log-session.sh {chat_id} plan_saved docs/plans/YYYY-MM-DD-<feature>-plan.md
+```
+
+Replace `YYYY-MM-DD-<feature>-plan.md` with the actual plan file path.
+
 ## Guidelines
 
 - Exact file paths always
@@ -30,3 +54,5 @@ See `.claude/skills/writing-plans/references/handoff-template.md` for handoff sc
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
+
+<!-- PHASE_COMPLETE: writing-plans -->

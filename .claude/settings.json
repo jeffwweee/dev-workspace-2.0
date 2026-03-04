@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node scripts/suggest-compact.js"
+            "command": "node scripts/track-phase.js"
           }
         ]
       }
