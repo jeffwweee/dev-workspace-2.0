@@ -17,6 +17,7 @@ TMUX_SESSION="cc-pichu:0.0"
 CLEAR_DELAY=3      # seconds before /clear
 COMMANDER_DELAY=5  # seconds after /clear before /commander
 SEND_KEY_DELAY=2   # seconds between command and Enter
+COMPLETE_DELAY=12  # seconds before completion message
 
 # Get active chat ID from session state
 CHAT_ID_FILE="$PROJECT_ROOT/state/sessions/.active-chat.json"
@@ -48,6 +49,12 @@ BOT_ID="pichu"
   tmux send-keys -t "$TMUX_SESSION" "/commander"
   sleep $SEND_KEY_DELAY
   tmux send-keys -t "$TMUX_SESSION" Enter
+
+  # Wait for commander to process, then send completion message
+  sleep $COMPLETE_DELAY
+
+  # Step 3: Send completion message
+  "$SCRIPT_DIR/reply.sh" "$BOT_ID" "$CHAT_ID" "✅ Restart completed. Starting a new session."
 
 ) &
 
