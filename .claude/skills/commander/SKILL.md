@@ -82,6 +82,9 @@ Scripts in `scripts/task-state.sh` handle state. API:
 | /compact | Trigger strategic compact |
 | /save | Force memory update |
 | /tasks | List recent task files |
+| /evolve | Extract patterns from observations, route to memory/candidates |
+| /evolve-status | Show pending observations count |
+| /candidates | List pending candidate files for review |
 
 ## Workflow Skills
 
@@ -105,6 +108,31 @@ Scripts in `scripts/task-state.sh` handle state. API:
 - `state/memory/phrases.md` - Response phrase variations
 
 **Reference:** `state/memory/knowledge/patterns.md`, `state/memory/knowledge/gotchas.md`
+
+## Learning Commands
+
+### /evolve
+
+Process observations and extract patterns:
+
+1. Run `node scripts/evolve.js`
+2. Report results: "Extracted X patterns, Y gotchas, Z candidates"
+3. Use reply.sh to send to user
+
+### /evolve-status
+
+Check pending observations:
+
+1. Run `./scripts/evolve-status.sh`
+2. Send output via reply.sh
+
+### /candidates
+
+List candidate files:
+
+1. Run `./scripts/candidates-list.sh`
+2. Send output via reply.sh
+3. Optionally use send-file.sh to send specific candidate for review
 
 ## Subagent Pattern
 
