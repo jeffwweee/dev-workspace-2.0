@@ -149,6 +149,7 @@ Complete the session with summary and archive:
    - If > 5: Run `node scripts/evolve.js` and report results
    - If <= 5: Send "Observations < 5, skipping /evolve"
 6. Clear session log file: `> state/sessions/{chat_id}-log.jsonl`
+7. Queue restart: `./scripts/trigger-restart.sh` (schedules /clear + /commander)
 
 ## Subagent Pattern
 
