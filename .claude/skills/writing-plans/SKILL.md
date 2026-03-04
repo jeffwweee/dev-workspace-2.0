@@ -1,111 +1,32 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: Use when you have a spec or requirements for a multi-step task, before touching code. Creates implementation plans for background-tasks skill.
 ---
 
 # Writing Plans
 
-## Overview
+Write implementation plans for subagents to execute. Include context: files, patterns, architecture.
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>-plan.md`
 
-Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+## Plan Review
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+Before saving, verify:
+- [ ] All tasks have file paths
+- [ ] Code is complete (not pseudocode)
+- [ ] Commands are exact with expected output
+- [ ] Context included (files, patterns, memory)
 
-**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+See `.claude/skills/writing-plans/references/plan-template.md` for template.
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+## Execution Handoff
 
-## Bite-Sized Task Granularity
+See `.claude/skills/writing-plans/references/handoff-template.md` for handoff scripts.
 
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
-- "Commit" - step
+## Guidelines
 
-## Plan Document Header
-
-**Every plan MUST start with this header:**
-
-```markdown
-# [Feature Name] Implementation Plan
-
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
-**Goal:** [One sentence describing what this builds]
-
-**Architecture:** [2-3 sentences about approach]
-
-**Tech Stack:** [Key technologies/libraries]
-
----
-```
-
-## Task Structure
-
-````markdown
-### Task N: [Component Name]
-
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
-
-**Step 1: Write the failing test**
-
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
-
-**Step 3: Write minimal implementation**
-
-```python
-def function(input):
-    return expected
-```
-
-**Step 4: Run test to verify it passes**
-
-Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
-````
-
-## Remember
 - Exact file paths always
 - Complete code in plan (not "add validation")
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
-
-## Execution Handoff
-
-After saving the plan, ask user to start background execution:
-
-**"Plan saved to `docs/plans/<filename>.md`. Start background execution now?"**
-
-**If user approves (yes/go/start/approve):**
-- **REQUIRED SUB-SKILL:** Use `background-tasks` skill
-- Plan executes in background
-- Pichu stays responsive to new messages
-- Smart notification when complete
-
-**If user declines:**
-- Plan is saved and ready for later
-- User can start execution anytime by saying "execute the plan"

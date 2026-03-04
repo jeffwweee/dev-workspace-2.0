@@ -5,106 +5,57 @@ description: Use after subagent completes to review work. Performs spec complian
 
 # Reviewer
 
-## Overview
-
-Two-stage review system with confidence check. Use after subagent completes work.
+Two-stage review system with confidence check. Use after subagent completes.
 
 ## Review Flow
 
 ```
-Subagent reports
-    ↓
-1. Spec Compliance Review
-    ↓ Pass?
-2. Code Quality Review
-    ↓ Pass?
-3. Confidence Check (≥8/10?)
-    ↓
-Notify user or spawn fix subagent
-```
-
-## Stage 1: Spec Compliance Review
-
-Check if subagent built what was asked:
-
-```markdown
-## Spec Compliance Checklist
-
-- [ ] All requirements implemented
-- [ ] Edge cases handled
-- [ ] Error handling present
-- [ ] Expected behavior verified
-
-**Issues:** {list any deviations}
-**Verdict:** PASS / FAIL
-```
-
-## Stage 2: Code Quality Review
-
-Check if it's well-built:
-
-```markdown
-## Code Quality Checklist
-
-- [ ] Follows coding standards
-- [ ] Clean, readable code
-- [ ] Proper error handling
-- [ ] No security issues
-- [ ] Tests written and passing
-
-**Issues:** {list any problems}
-**Verdict:** PASS / FAIL
-```
-
-## Stage 3: Confidence Scoring
-
-Rate confidence in the implementation:
-
-```markdown
-## Confidence Assessment
-
-| Aspect | Score | Notes |
-|--------|-------|-------|
-| Spec Compliance | X/10 | {notes} |
-| Code Quality | X/10 | {notes} |
-| Test Coverage | X/10 | {notes} |
-| **Overall** | **X/10** | {summary} |
-
-## Recommendation
-- [ ] {actions needed before merge}
+Subagent completes → Spec Compliance → Code Quality → Confidence (≥8/10?) → Notify
 ```
 
 ## Decision Matrix
 
-| Spec | Quality | Confidence | Action |
-|------|---------|------------|--------|
-| FAIL | - | - | Spawn fix subagent |
-| PASS | FAIL | - | Spawn fix subagent |
-| PASS | PASS | < 8 | Request manual review |
-| PASS | PASS | ≥ 8 | Ready to commit |
+| Spec | Quality | Confidence | Retries | Action |
+|------|---------|------------|---------|--------|
+| FAIL | - | - | < 3 | Spawn fix subagent |
+| PASS | FAIL | - | < 3 | Spawn fix subagent |
+| PASS | PASS | < 8 | - | Request manual review |
+| PASS | PASS | ≥ 8 | - | Ready to commit |
+| FAIL | - | - | ≥ 3 | Escalate to user |
+| PASS | FAIL | - | ≥ 3 | Escalate to user |
 
-## Notification Template
+## Review Stages
 
-```typescript
-// Ready to commit
-await fetch('http://localhost:3100/reply', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    bot_id: 'pichu',
-    chat_id: sessionState.chat_id,
-    text: `✅ Done! {summary}\n\nConfidence: {score}/10\n\nFiles: {files}`
-  })
-});
+**Stage 1: Spec Compliance** - See `references/spec-checklist.md`
 
-// Needs fixes
-await fetch('http://localhost:3100/reply', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    bot_id: 'pichu',
-    chat_id: sessionState.chat_id,
-    text: `⚠️ Issues found:\n\n{issues}\n\nSpawning fix subagent...`
-  })
-});
+**Stage 2: Code Quality** - See `references/quality-checklist.md`
+
+**Stage 3: Confidence Score** - Rate 1-10, ≥8 to pass
+
+## Notification
+
+Use `scripts/reply.sh` with templates from `references/notification-templates.md`
+
+## Fix Subagent with Retry Limit
+
+If review fails, spawn fix subagent with:
 ```
+Task: Fix review issues
+Prompt: {list of issues from review}
+run_in_background: true
+```
+
+**Retry Limit:** Max 3 fix attempts per task. Track via task metadata.
+After 3 failures:
+1. Mark task as "failed" with error details
+2. Escalate to user: "Task failed after 3 attempts. Options: Modify plan, Cancel, Try different approach?"
+3. Stop automatic fix attempts
+
+## Retry Tracking
+
+Track attempts in task metadata:
+```
+metadata: { retry_count: 1, last_issue: "spec compliance failed" }
+```
+
+Increment after each fix attempt. At 3 → escalate.

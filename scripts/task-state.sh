@@ -225,6 +225,64 @@ get_notification_summary() {
   fi
 }
 
+# increment_retry <chat_id> <task_id> [issue_description]
+increment_retry() {
+  local chat_id="$1"
+  local task_id="$2"
+  local issue="${3:-unknown}"
+  local detail_file="$TASKS_DIR/${chat_id}-${task_id}.md"
+
+  if [ ! -f "$detail_file" ]; then
+    echo "0"
+    return
+  fi
+
+  # Get current retry count
+  local current_count=$(grep "^- Retry Count:" "$detail_file" | sed 's/- Retry Count: //' || echo "0")
+  local new_count=$((current_count + 1))
+
+  # Update retry count
+  if grep -q "^- Retry Count:" "$detail_file"; then
+    sed -i "s/- Retry Count: .*/- Retry Count: ${new_count}/" "$detail_file"
+  else
+    # Add Retry Count section after Meta section
+    sed -i "/^## Meta$/a\\
+- Retry Count: ${new_count}\\
+- Last Issue: ${issue}
+" "$detail_file"
+  fi
+
+  # Update last issue
+  sed -i "s/- Last Issue: .*/- Last Issue: ${issue}/" "$detail_file"
+
+  echo "$new_count"
+}
+
+# get_retry_count <chat_id> <task_id>
+get_retry_count() {
+  local chat_id="$1"
+  local task_id="$2"
+  local detail_file="$TASKS_DIR/${chat_id}-${task_id}.md"
+
+  if [ ! -f "$detail_file" ]; then
+    echo "0"
+    return
+  fi
+
+  grep "^- Retry Count:" "$detail_file" | sed 's/- Retry Count: //' || echo "0"
+}
+
+# reset_retry <chat_id> <task_id>
+reset_retry() {
+  local chat_id="$1"
+  local task_id="$2"
+  local detail_file="$TASKS_DIR/${chat_id}-${task_id}.md"
+
+  if [ -f "$detail_file" ]; then
+    sed -i "s/- Retry Count: .*/- Retry Count: 0/" "$detail_file"
+  fi
+}
+
 # Command dispatcher
 case "$1" in
   get_status) get_status "$2" ;;
@@ -237,6 +295,9 @@ case "$1" in
   has_pending_notification) has_pending_notification "$2" ;;
   clear_notification) clear_notification "$2" ;;
   get_notification_summary) get_notification_summary "$2" ;;
+  increment_retry) increment_retry "$2" "$3" "$4" ;;
+  get_retry_count) get_retry_count "$2" "$3" ;;
+  reset_retry) reset_retry "$2" "$3" ;;
   *)
     echo "Usage: $0 <command> [args...]"
     echo "Commands:"
@@ -250,6 +311,9 @@ case "$1" in
     echo "  has_pending_notification <chat_id>"
     echo "  clear_notification <chat_id>"
     echo "  get_notification_summary <chat_id>"
+    echo "  increment_retry <chat_id> <task_id> [issue_description]"
+    echo "  get_retry_count <chat_id> <task_id>"
+    echo "  reset_retry <chat_id> <task_id>"
     exit 1
     ;;
 esac

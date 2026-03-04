@@ -5,88 +5,47 @@ description: Execute implementation plans in background while Pichu stays respon
 
 # Background Tasks
 
-## Overview
-
-Execute implementation plans in background while Pichu stays responsive to new messages.
-
-**Announce at start:** "I'm using the background-tasks skill to execute this plan in background."
+Execute plans in background while staying responsive to new messages.
 
 ## When to Use
 
-After `writing-plans` skill completes and user approves execution:
-- User says "yes", "go", "start", "approve" to start execution
-- Plan file exists at `docs/plans/YYYY-MM-DD-*.md`
+After `writing-plans` skill completes and user approves execution.
 
-## The Process
+User can also trigger manually: "execute the plan"
 
-### Step 1: Load plan and prepare state
+## Process
 
-1. Read the plan file (passed as argument or most recent in `docs/plans/`)
-2. Generate task ID using `scripts/task-state.sh set_running`
-3. Reply to user: "Started background execution. I'll notify when done. /status for updates."
-
-### Step 2: Spawn background subagent
-
-Use Task tool with `run_in_background: true`:
-
-```
-Task tool:
-  description: "Execute plan: [plan name]"
-  prompt: |
-    Use subagent-driven-development skill to execute this plan:
-
-    [Plan content or file path]
-
-    Work through all tasks. Report completion with summary.
-  run_in_background: true
-```
-
-### Step 3: Return to message loop
-
-After spawning:
-- Control returns immediately to Commander
-- Pichu can respond to new messages
-- Task runs in background
-
-### Step 4: Handle completion
-
-When Task completes (detected via TaskOutput):
-1. Get result summary from subagent
-2. Update task state: `scripts/task-state.sh set_completed`
-3. Set pending notification flag
-4. If user idle > 60s: send notification immediately
-5. Otherwise: notify on next interaction
-
-## Smart Notification
-
-On each new message, Commander checks:
-1. If `has_pending_notification` is true AND `check_idle` > 60s
-2. Send notification: "Background task complete! [summary]"
-3. Clear notification flag
-
-## State Files
-
-Task state tracked in `state/tasks/`:
-- `{chat_id}.md` - Summary + last message time + pending notification
-- `{chat_id}-{task_id}.md` - Detailed progress
-
-## Commands
-
-Users can interact with background tasks:
-- `/status` - Show current task status (Commander handles this)
-- `/stop` - Stop running task with TaskStop tool
+1. Load plan → Generate task ID → Reply "Started background execution..."
+2. Spawn subagent with `Task(tool)` - see `references/task-template.md`
+3. Return to message loop (task runs in background)
+4. Handle completion with smart notification
 
 ## Critical Rules
 
-1. **ALWAYS use run_in_background: true** - This is the core feature
-2. **Track state via scripts** - Use task-state.sh for all state updates
-3. **Reply immediately after spawn** - User knows task started
-4. **Don't block** - Return to Commander after spawning
-5. **Smart notification** - Only notify if user is idle
+1. **ALWAYS use `run_in_background: true`**
+2. **Track state via `scripts/task-state.sh`**
+3. **Reply immediately after spawn**
+4. **Don't block - return to Commander**
+5. **Smart notification - only if user idle > 60s**
 
 ## Integration
 
-Works with:
-- `writing-plans` - Creates the plan this skill executes
-- `subagent-driven-development` - The actual execution engine
-- `commander` - Orchestrates message flow and notifications
+- `writing-plans` - creates the plan
+- `subagent-driven-development` - execution engine
+- `commander` - orchestrates flow and notifications
+
+## Error Handling with Escalation
+
+If task fails:
+1. Check TaskOutput for error details
+2. Track failure count in task state
+3. If failures < 3: Auto-retry with fix subagent
+4. If failures ≥ 3: Escalate immediately
+
+**Escalation Triggers:**
+- 3 consecutive task failures
+- Fix subagent fails 3 times
+- Critical errors (auth failures, missing dependencies)
+
+**Escalation Message:**
+"Task failed after 3 attempts: [error summary]. Options: Modify plan, Cancel, Try different approach?"

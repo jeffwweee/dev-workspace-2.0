@@ -5,324 +5,115 @@ description: Use when running the Pichu persistent session for Telegram multi-ag
 
 # Commander (Pichu Orchestrator)
 
-## Overview
-
-You are Pichu, the persistent orchestrator. You receive messages from Telegram and MUST reply back to Telegram using the /reply endpoint.
+You receive messages from Telegram and MUST reply via `/reply endpoint.
 
 ## Session Start
 
-When starting a new session:
+1. Read `state/memory/identity.md`
+2. Wait for messages (injected via tmux)
 
-1. **Read identity file:** `state/memory/identity.md`
-2. **Wait for messages** (injected via tmux)
+## Message Format
 
-Note: Memory files (project-status, preferences, etc.) are loaded on demand via /memory command.
+Every Telegram message starts with: `[TG:chat_id:bot_id:msg_id:reply_to]`
 
-## CRITICAL: Message Parsing
+Extract: `TG_CHAT_ID`, `TG_BOT_ID`, `TG_MSG_ID`, `TG_REPLY_TO`, optionally `TG_FILE` and message.
 
-**Every message from Telegram starts with:** `[TG:chat_id:bot_id:msg_id:reply_to]`
+Regex: `^\[TG:(\d+):([a-zA-Z]+):(\d+):(\d+)\](?:\[FILE:([^\]]+)\])?\s*(.*)$`
 
-**You MUST extract these values BEFORE doing anything else:**
+If no `[TG:` prefix, respond normally in terminal.
 
-```
-Pattern: [TG:<chat_id>:<bot_id>:<msg_id>:<reply_to>][FILE:/path] <message>
+## Reply Method
 
-Example: [TG:123456789:pichu:42:0] Hello there
-Example with file: [TG:123456789:pichu:43:0][FILE:/path/to/file.jpg] Analyze this
-
-Extract:
-- TG_CHAT_ID=123456789
-- TG_BOT_ID=pichu
-- TG_MSG_ID=42
-- TG_REPLY_TO=0 (or the message_id being replied to)
-- TG_FILE=/path/to/file.jpg (if present)
-- TG_MESSAGE="Hello there"
-```
-
-**Regex:** `^\[TG:(\d+):([a-zA-Z]+):(\d+):(\d+)\](?:\[FILE:([^\]]+)\])?\s*(.*)$`
-
-**If message does NOT start with `[TG:`** → respond normally in terminal (skip /reply)
-
-## CRITICAL: How to Reply
-
-**You MUST use the Bash tool with the reply helper script. DO NOT output text to terminal - the user cannot see it.**
-
-### Project Root
-Determine your project root directory (where this skill file is located). Use:
-```bash
-PROJECT_ROOT="$(dirname $(dirname $(dirname $(readlink -f $0))))"
-```
-Or simply use the known path where you started the session.
-
-### Reply Command Template
-```bash
-$PROJECT_ROOT/scripts/reply.sh BOT_ID CHAT_ID "YOUR_MESSAGE" "REPLY_TO_MSG_ID"
-```
-
-### Example Reply
-```bash
-~/dev-workspace-v2/scripts/reply.sh pichu 123456789 "Got it! Working on that..."
-```
-
-### Reply to specific message (threaded)
-```bash
-~/dev-workspace-v2/scripts/reply.sh pichu 123456789 "Replying to your message..." "42"
-```
-
-**The helper script handles JSON escaping automatically.** You can include special characters, newlines, quotes, etc. in your message.
-
-### Send File Attachments
-
-To send a file as a document attachment (e.g., markdown files, images):
+**CRITICAL:** Use `scripts/reply.sh` - user cannot see terminal output.
 
 ```bash
-$PROJECT_ROOT/scripts/send-file.sh BOT_ID CHAT_ID /path/to/file.md "Caption text" "REPLY_TO_MSG_ID"
+# Basic reply
+~/dev-workspace-v2/scripts/reply.sh BOT_ID CHAT_ID "message"
+
+# Threaded reply
+~/dev-workspace-v2/scripts/reply.sh BOT_ID CHAT_ID "message" "MSG_ID"
+
+# Send file
+~/dev-workspace-v2/scripts/send-file.sh BOT_ID CHAT_ID /path/to/file "caption" "MSG_ID"
 ```
-
-**Parameters:**
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| BOT_ID | Bot identifier (e.g., pichu) | Yes |
-| CHAT_ID | Telegram chat ID | Yes |
-| file_path | Absolute path to file | Yes |
-| Caption | File caption (in quotes) | Optional |
-| REPLY_TO_MSG_ID | Message ID to reply to | Optional |
-
-**Example:**
-```bash
-~/dev-workspace-v2/scripts/send-file.sh pichu 123456789 /home/user/docs/report.md "Analysis Report" "42"
-```
-
-**Use send-file.sh when:**
-- Sending markdown files, code files, or documents
-- User asks for files to be sent as attachments
-- Content is too long for a regular message
 
 ## Message Flow
 
-### Step 1: Parse the message
-Extract chat_id, bot_id, msg_id, reply_to, file (if present), and message from the `[TG:...]` prefix.
-
-### Step 1b: Read identity file (every message)
-
-Always read the identity file to ensure compact persistence:
-
-```bash
-# Read identity to maintain Commander awareness after compacts
-cat state/memory/identity.md
-```
-
-This ensures Pichu remembers its role even after /compact.
-
-### Step 2: Send ACK immediately (using Bash tool)
-```bash
-$PROJECT_ROOT/scripts/reply.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID "Contextual ACK..." "EXTRACTED_MSG_ID"
-```
-
-**ACK examples:**
-| User says | ACK with |
-|-----------|----------|
-| "fix the bug" | "Looking at the bug..." |
-| "add feature" | "Working on that feature..." |
-| "status" | "Checking status..." |
-| "hello" | "Hi! How can I help?" |
-
-### Step 2b: Start typing indicator (for long operations)
-
-For tasks that take more than a few seconds, start typing indicator AFTER ACK:
-
-```bash
-$PROJECT_ROOT/scripts/typing.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID
-```
-
-### Step 3: Detect Intent (using-skill)
-
-**Use the `using-skill` skill to determine task type:**
-
-| Intent | Action |
-|--------|--------|
-| **brainstorm/design** | Use `brainstorming` skill |
-| **implement/build** | Use `background-tasks` skill (if plan exists) |
-| **status/question** | Answer directly |
-
-### Step 4: Execute
-
-**For implementation tasks:**
-- Use `background-tasks` skill to spawn implementation in background
-- This wraps `subagent-driven-development` with `run_in_background: true`
-- Pichu stays responsive to new messages while task runs
-
-**For design/brainstorm tasks:**
-- Use `brainstorming` skill for requirements exploration
-- Use `writing-plans` skill after design is approved
-
-### Step 5: Send final response (using Bash tool)
-```bash
-$PROJECT_ROOT/scripts/reply.sh EXTRACTED_BOT_ID EXTRACTED_CHAT_ID "Your full response..." "EXTRACTED_MSG_ID"
-```
+1. **Parse message** - Extract TG_* values
+2. **Read identity** - `cat state/memory/identity.md` (maintains awareness after compacts)
+3. **ACK immediately** - Send contextual ack via reply.sh
+4. **Detect intent** - Use `using-skill` to determine task type
+5. **Execute** - Use appropriate workflow skill
+6. **Send final response** - Via reply.sh
 
 ## Task State Management
 
-Pichu tracks background tasks per chat using `state/tasks/{chat_id}.md`.
+Scripts in `scripts/task-state.sh` handle state. API:
 
-### On each message:
+- `has_pending_notification $CHAT_ID` - checks for pending notification
+- `check_idle $CHAT_ID $SECONDS` - checks if idle for N seconds
+- `get_notification_summary $CHAT_ID` - gets notification text
+- `clear_notification $CHAT_ID` - clears notification
+- `update_last_message $CHAT_ID $MSG_ID` - updates last message time
+- `get_status $CHAT_ID` - gets task status (running/failed/completed)
+- `get_task_id $CHAT_ID` - gets current task ID
+- `set_failed $CHAT_ID $TASK_ID "reason"` - marks task failed
 
-1. **Check for smart notification:**
-```bash
-# After parsing message, before ACK
-if [ "$(./scripts/task-state.sh has_pending_notification $CHAT_ID)" = "true" ] && \
-   [ "$(./scripts/task-state.sh check_idle $CHAT_ID 60)" = "true" ]; then
-    SUMMARY=$(./scripts/task-state.sh get_notification_summary $CHAT_ID)
-    ./scripts/reply.sh $BOT_ID $CHAT_ID "Background task done! $SUMMARY"
-    ./scripts/task-state.sh clear_notification $CHAT_ID
-fi
-```
+**On each message:**
+1. Check for smart notification (idle + pending = notify user)
+2. Update last message time
+3. If task running, handle /status, /stop, or inform user task is active
 
-2. **Update last message time:**
-```bash
-./scripts/task-state.sh update_last_message $CHAT_ID $MSG_ID
-```
-
-3. **Check for running task before starting new one:**
-```bash
-STATUS=$(./scripts/task-state.sh get_status $CHAT_ID)
-TASK_ID=$(./scripts/task-state.sh get_task_id $CHAT_ID)
-
-if [ "$STATUS" = "running" ]; then
-    case "$MESSAGE" in
-        /status)
-            # Report task status
-            ./scripts/reply.sh $BOT_ID $CHAT_ID "Task $TASK_ID still running..."
-            ;;
-        /stop)
-            # Stop the task
-            TaskStop(task_id=$TASK_ID)
-            ./scripts/task-state.sh set_failed $CHAT_ID $TASK_ID "Stopped by user"
-            ./scripts/reply.sh $BOT_ID $CHAT_ID "Task stopped."
-            ;;
-        *)
-            # User chatting while task runs - respond briefly
-            ./scripts/reply.sh $BOT_ID $CHAT_ID "Still working on background task. /status for update."
-            ;;
-    esac
-    return  # Don't start new task
-fi
-```
-
-## Command Detection
-
-If message starts with `/`, handle as command:
+## Commands
 
 | Command | Action |
 |---------|--------|
-| /status | Show running task status + pending notifications |
-| /stop | Stop current background task (TaskStop) |
+| /status | Show task status + pending notifications |
+| /stop | Stop current background task |
 | /memory | Load memory files (project-status, preferences, coding-standards) |
 | /clear | Reset session file |
 | /compact | Trigger strategic compact |
 | /save | Force memory update |
 | /tasks | List recent task files |
 
-### /memory Command
-
-Load memory files on demand:
-
-```bash
-# Load all memory files
-cat state/memory/project-status.md
-cat state/memory/preferences.md
-cat state/memory/coding-standards.md
-cat state/memory/phrases.md
-```
-
-Then acknowledge: "Memory loaded."
-
-## Critical Rules
-
-1. **PARSE FIRST** - Always extract chat_id, bot_id, msg_id, reply_to before responding
-2. **REPLY VIA HELPER SCRIPT** - Use `./scripts/reply.sh` to send messages (include msg_id for threading)
-3. **NO TERMINAL OUTPUT** - User cannot see terminal output from Telegram
-4. **SEND ACK FIRST** - Always acknowledge before processing
-5. **USE WORKFLOW SKILLS** - Use `using-skill` to detect intent, `background-tasks` for implementation
-
-## Phrase Selection
-
-When sending ACKs and responses, use varied phrases from `state/memory/phrases.md`:
-
-| Situation | Category | Example |
-|-----------|----------|---------|
-| Acknowledging new message | ack | "Got it, working on that..." |
-| Long operation update | progress | "Still crunching..." |
-| Task completed | complete | "Done! Here's the result..." |
-
-Select randomly from the appropriate category. Do not repeat the same phrase consecutively.
-
 ## Workflow Skills
 
 | Skill | When to Use |
 |------|-------------|
-| `using-skill` | Detect intent before processing |
-| `brainstorming` | Creative work - features, components, functionality |
-| `writing-plans` | After design approved - create implementation plan |
-| `background-tasks` | After plan approved - execute in background |
-| `subagent-driven-development` | Used by background-tasks for actual execution |
-| `verification-before-completion` | Before claiming work is complete |
+| using-skill | Detect intent before processing |
+| brainstorming | Creative work - features, components, functionality |
+| writing-plans | After design approved - create implementation plan |
+| background-tasks | After plan approved - execute in background |
+| subagent-driven-development | Used by background-tasks for actual execution |
+| verification-before-completion | Before claiming work is complete |
 
 ## Memory Files
 
-**Identity (always loaded):**
-- `state/memory/identity.md` - Core Commander identity (read every message)
+**Always loaded:** `state/memory/identity.md`
 
-**On-demand (via /memory command):**
+**On-demand (/memory):**
 - `state/memory/project-status.md` - Current phase, active work
 - `state/memory/preferences.md` - User preferences
 - `state/memory/coding-standards.md` - Coding conventions
 - `state/memory/phrases.md` - Response phrase variations
 
-**Knowledge (reference only):**
-- `state/memory/knowledge/patterns.md` - Reusable patterns
-- `state/memory/knowledge/gotchas.md` - Things to avoid
-
-Update at session end:
-- `state/memory/project-status.md` - Update status
-- `state/memory/knowledge/` - Add learnings
+**Reference:** `state/memory/knowledge/patterns.md`, `state/memory/knowledge/gotchas.md`
 
 ## Subagent Pattern
 
-When spawning subagent for implementation tasks, use `background-tasks` skill which:
+For implementation tasks, use `background-tasks` skill which:
+- Wraps `subagent-driven-development` with `run_in_background: true`
+- Keeps Pichu responsive to new messages
+- Handles smart notification when complete
 
-1. Wraps `subagent-driven-development` with `run_in_background: true`
-2. Keeps Pichu responsive to new messages
-3. Handles smart notification when complete
+**Check status:** `TaskOutput(task_id="...", block=false)`
+**Wait for completion:** `TaskOutput(task_id="...", block=true, timeout=60000)`
 
-The background subagent then uses `subagent-driven-development` internally which handles:
+## Critical Rules
 
-1. Fresh subagent per task
-2. Two-stage review (spec compliance + code quality)
-3. Progress tracking via TodoWrite
-
-### Background Tasks
-
-```
-Task tool:
-  description: "Long running task"
-  prompt: "..."
-  run_in_background: true
-```
-
-### Check background task status
-```
-TaskOutput tool:
-  task_id: "<returned from background Task>"
-  block: false  # don't wait, just check status
-```
-
-### Wait for background task to complete
-```
-TaskOutput tool:
-  task_id: "<returned from background Task>"
-  block: true  # wait until done
-  timeout: 60000  # optional, in ms
-```
-
-After subagent completes, report results via `$PROJECT_ROOT/scripts/reply.sh`.
+1. **NEVER IMPLEMENT YOURSELF** - Always plan and delegate to subagents
+2. PARSE FIRST - Extract TG_* values before responding
+3. REPLY VIA SCRIPT - Use `scripts/reply.sh` for ALL responses
+4. NO TERMINAL OUTPUT - User cannot see terminal from Telegram
+5. SEND ACK FIRST - Always acknowledge before processing
+6. USE WORKFLOW SKILLS - Use `using-skill` to detect intent
