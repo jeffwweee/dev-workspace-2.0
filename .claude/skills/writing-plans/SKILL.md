@@ -23,29 +23,32 @@ Before saving, verify:
 
 See `.claude/skills/writing-plans/references/plan-template.md` for template.
 
-## Execution Handoff
+## Plan Approval Flow
 
-See `.claude/skills/writing-plans/references/handoff-template.md` for handoff scripts.
+Plan → Review → Approval → Compact check → Execution
 
-## After Plan Saved
+1. Save plan to `docs/plans/YYYY-MM-DD-<feature>-plan.md`
+   - Log: `./scripts/log-session.sh {chat_id} plan_saved docs/plans/YYYY-MM-DD-<feature>-plan.md`
+2. Send via `scripts/send-file.sh` for review
+3. **Explicit confirmation required** - Wait for approval signal
+4. **After approval, check for compact:**
+   ```bash
+   PLAN_FILE="docs/plans/YYYY-MM-DD-<feature>-plan.md"
+   if [ "$(./scripts/check-doc-size.sh "$PLAN_FILE")" = "recommend" ]; then
+     SIZE_KB=$(du -k "$PLAN_FILE" | cut -f1)
+     reply "Plan approved. Doc is large (${SIZE_KB}KB). Consider /compact to free context before execution."
+   else
+     reply "Plan approved. Ready for execution phase."
+   fi
+   ```
+5. If approved → User triggers execution (manually or via command)
+6. If changes → Revise and resend
 
-After saving the implementation plan, check if it's large and recommend compact:
+**Approval signals:** "approved", "looks good", "yes proceed", "LGTM", "execute"
 
-```bash
-# Check if plan doc is large
-PLAN_FILE="docs/plans/YYYY-MM-DD-<feature>-plan.md"  # Use actual filename
-if [ "$(./scripts/check-doc-size.sh "$PLAN_FILE")" = "recommend" ]; then
-  SIZE_KB=$(du -k "$PLAN_FILE" | cut -f1)
-  reply "Plan saved. Doc is large (${SIZE_KB}KB). Consider /compact to free context before execution."
-else
-  reply "Plan saved. Ready for execution."
-fi
+**Do NOT proceed** without explicit approval. If uncertain, ask: "Approve this plan? (yes/no/request changes)"
 
-# Log plan save for session tracking
-./scripts/log-session.sh {chat_id} plan_saved docs/plans/YYYY-MM-DD-<feature>-plan.md
-```
-
-Replace `YYYY-MM-DD-<feature>-plan.md` with the actual plan file path.
+**IMPORTANT:** Only check for compact AFTER user approval, not before.
 
 ## Guidelines
 

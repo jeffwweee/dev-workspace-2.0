@@ -37,29 +37,24 @@ Design doc (WHAT) → Implementation plan (HOW) → Execution
    - Log: `./scripts/log-session.sh {chat_id} design_saved docs/plans/YYYY-MM-DD-<topic>-design.md`
 2. Send via `scripts/send-file.sh` for review
 3. **Explicit confirmation required** - Wait for approval signal
-4. If approved → invoke `writing-plans` skill
-5. If changes → revise and resend
+4. **After approval, check for compact:**
+   ```bash
+   DOC_FILE="docs/plans/YYYY-MM-DD-<topic>-design.md"
+   if [ "$(./scripts/check-doc-size.sh "$DOC_FILE")" = "recommend" ]; then
+     SIZE_KB=$(du -k "$DOC_FILE" | cut -f1)
+     reply "Design approved. Doc is large (${SIZE_KB}KB). Consider /compact to free context before planning."
+   else
+     reply "Design approved. Ready for planning phase."
+   fi
+   ```
+5. If approved → invoke `writing-plans` skill
+6. If changes → revise and resend
 
 **Approval signals:** "approved", "looks good", "yes proceed", "LGTM"
 
 **Do NOT proceed** without explicit approval. If uncertain, ask: "Approve this design? (yes/no/request changes)"
 
-## After Design Saved
-
-After saving the design doc, check if it's large and recommend compact:
-
-```bash
-# Check if design doc is large
-DOC_FILE="docs/plans/YYYY-MM-DD-<topic>-design.md"  # Use actual filename
-if [ "$(./scripts/check-doc-size.sh "$DOC_FILE")" = "recommend" ]; then
-  SIZE_KB=$(du -k "$DOC_FILE" | cut -f1)
-  reply "Design saved. Doc is large (${SIZE_KB}KB). Consider /compact to free context before planning."
-else
-  reply "Design saved. Ready for planning phase."
-fi
-```
-
-Replace `YYYY-MM-DD-<topic>-design.md` with the actual design file path.
+**IMPORTANT:** Only check for compact AFTER user approval, not before.
 
 ## Key Principles
 
