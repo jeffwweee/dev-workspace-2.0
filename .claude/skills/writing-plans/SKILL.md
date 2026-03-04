@@ -9,6 +9,10 @@ Write implementation plans for subagents to execute. Include context: files, pat
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>-plan.md`
 
+## Telegram Mode
+
+See `references/telegram-handling.md` for message parsing and ACK flow.
+
 ## Plan Review
 
 Before saving, verify:

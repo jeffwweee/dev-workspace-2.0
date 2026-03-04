@@ -13,14 +13,17 @@ Turn ideas into designs through collaborative dialogue.
 
 ## Process
 
-1. Explore project context (files, docs, commits)
-2. Ask clarifying questions (one at a time)
-3. Propose 2-3 approaches with trade-offs
-4. Present design section-by-section, get approval
-5. Write design doc → commit
-6. Invoke `writing-plans` skill
+1. **Handle Telegram** - Parse TG_* values, ACK immediately (see `references/telegram-handling.md`)
+2. Explore project context (files, docs, commits)
+3. Ask clarifying questions (one at a time)
+4. Propose 2-3 approaches with trade-offs
+5. Present design section-by-section, get approval
+6. Write design doc → commit
+7. Invoke `writing-plans` skill
 
 ## Telegram Mode
+
+See `references/telegram-handling.md` for message parsing and ACK flow.
 
 **DO NOT use AskUserQuestion** - not visible in Telegram.
 
