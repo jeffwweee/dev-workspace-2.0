@@ -8,7 +8,8 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # Configuration
 TMUX_SESSION="cc-pichu:0.0"
 COMPACT_DELAY=30  # seconds
-RECOVERY_DELAY=5  # seconds after compact
+RECOVERY_DELAY=10  # seconds after compact
+SEND_KEY_DELAY=5  # seconds after send key
 
 # Get active chat ID from session state
 CHAT_ID_FILE="$PROJECT_ROOT/state/sessions/.active-chat.json"
@@ -29,14 +30,18 @@ BOT_ID="pichu"
   sleep $COMPACT_DELAY
 
   # Inject /compact command
-  tmux send-keys -t "$TMUX_SESSION" "/compact" Enter
+  tmux send-keys -t "$TMUX_SESSION" "/compact"
+
+  sleep $SEND_KEY_DELAY 
+  tmux send-keys -t "$TMUX_SESSION" Enter
 
   # Wait for compact to complete
   sleep $RECOVERY_DELAY
 
   # Inject /back message to trigger recovery response
   # Format: [TG:chat_id:bot_id:msg_id:reply_to]
-  tmux send-keys -t "$TMUX_SESSION" "[TG:${CHAT_ID}:${BOT_ID}:0:0] /back" Enter
+  tmux send-keys -t "$TMUX_SESSION" "[TG:${CHAT_ID}:${BOT_ID}:0:0] /back"
+  tmux send-keys -t "$TMUX_SESSION" Enter
 ) &
 
 echo "Compact scheduled in ${COMPACT_DELAY}s"

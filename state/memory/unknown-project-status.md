@@ -9,12 +9,11 @@
 **To:** planning
 
 ## Design Decisions
-- - Design decisions made
-- [Key decisions from brainstorming]
+- 112 +- `scripts/smart-compact.sh` - Not needed (simplified approach)
+- 211 -More accurate approach using message tracking:
 
 ## Next Steps
-- [ ] Task 1
-- [ ] Task 2
+- [ ] Continue to next phase
 
 ## Active Task IDs
 _No active tasks_

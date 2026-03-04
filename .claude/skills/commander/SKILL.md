@@ -157,14 +157,21 @@ For implementation tasks, use `background-tasks` skill which:
 - Keeps Pichu responsive to new messages
 - Handles smart notification when complete
 
-**Check status:** `TaskOutput(task_id="...", block=false)`
-**Wait for completion:** `TaskOutput(task_id="...", block=true, timeout=60000)`
+**NON-BLOCKING status check:** `TaskOutput(task_id="...", block=false)`
+**DO NOT wait for completion** - let task run in background, return to message loop immediately
+
+**When to check status:**
+- User types `/status` command
+- Smart notification check (user idle > 60s + pending notification)
+
+**CRITICAL:** Never use `block=true` after spawning background task - this blocks Pichu from processing new messages!
 
 ## Critical Rules
 
 1. **NEVER IMPLEMENT YOURSELF** - Always plan and delegate to subagents
-2. PARSE FIRST - Extract TG_* values before responding
-3. REPLY VIA SCRIPT - Use `scripts/reply.sh` for ALL responses
-4. NO TERMINAL OUTPUT - User cannot see terminal from Telegram
-5. SEND ACK FIRST - Always acknowledge before processing
-6. USE WORKFLOW SKILLS - Use `using-skill` to detect intent
+2. **NEVER BLOCK ON BACKGROUND TASKS** - Always return to message loop after spawning
+3. PARSE FIRST - Extract TG_* values before responding
+4. REPLY VIA SCRIPT - Use `scripts/reply.sh` for ALL responses
+5. NO TERMINAL OUTPUT - User cannot see terminal from Telegram
+6. SEND ACK FIRST - Always acknowledge before processing
+7. USE WORKFLOW SKILLS - Use `using-skill` to detect intent

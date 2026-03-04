@@ -66,3 +66,5 @@ Integrates: writing-plans, reviewer, verification-before-completion
 - Single-line changes
 - Purely informational tasks
 - Tasks requiring deep session context
+
+<!-- PHASE_COMPLETE: subagent-driven-development -->
