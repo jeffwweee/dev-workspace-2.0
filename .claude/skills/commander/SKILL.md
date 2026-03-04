@@ -40,11 +40,18 @@ If no `[TG:` prefix, respond normally in terminal.
 ## Message Flow
 
 1. **Parse message** - Extract TG_* values
-2. **Read identity** - `cat state/memory/identity.md` (maintains awareness after compacts)
-3. **ACK immediately** - Send contextual ack via reply.sh
-4. **Detect intent** - Use `using-skill` to determine task type
-5. **Execute** - Use appropriate workflow skill
-6. **Send final response** - Via reply.sh
+2. **Track active chat** - Update `state/sessions/.active-chat.json`
+3. **Read identity** - `cat state/memory/identity.md` (maintains awareness after compacts)
+4. **ACK immediately** - Send contextual ack via reply.sh
+5. **Detect intent** - Use `using-skill` to determine task type
+6. **Execute** - Use appropriate workflow skill
+7. **Send final response** - Via reply.sh
+
+**Chat Tracking Implementation:**
+```bash
+# After parsing TG_* values, update active chat:
+echo "{\"chat_id\": \"$TG_CHAT_ID\", \"bot_id\": \"$TG_BOT_ID\", \"last_updated\": \"$(date -I)\"}" > state/sessions/.active-chat.json
+```
 
 ## Task State Management
 
